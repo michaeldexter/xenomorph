@@ -14,5 +14,7 @@ It can be enabled with:
 
 service xendomains onestart
 
+Note that UEFI boot should be supported in 14 MAIN
+
 
 This is not an endorsement of GitHub
