@@ -1,9 +1,9 @@
 #!/bin/sh
 
-# Copyright 2021 Michael Dexter. All rights reserved
+# Copyright 2021, 2022 Michael Dexter. All rights reserved
 
 [ $(sysctl -n machdep.bootmethod) = BIOS ] || \
-	{ echo Only BIOS/Legacy booting is supported. Exiting ; exit 1 ; }
+	{ echo Warning! UEFI booting is experimental on 14 ; sleep 3 ; }
 
 which xl || \
 { echo Xen packages missing - pkg install xen-tools xen-kernel ; exit 1 ; }
@@ -20,7 +20,7 @@ tail /etc/ttys
 
 grep "xen_kernel" /boot/loader.conf || echo "xen_kernel=\"/boot/xen\"" >> /boot/loader.conf
 grep "xen_cmdline" /boot/loader.conf || \
-echo "xen_cmdline=\"dom0_mem=2048M dom0_max_vcpus=4 dom0=pvh com1=115200,8n1 guest_loglvl=all loglvl=all\"" \
+echo "xen_cmdline=\"dom0_mem=4096M dom0_max_vcpus=4 dom0=pvh com1=115200,8n1 guest_loglvl=all loglvl=all\"" \
 	>> /boot/loader.conf
 # Add console=com1 to enable the serial console
 grep "if_tap_load" /boot/loader.conf || echo if_tap_load=\"YES\" >> /boot/loader.conf
