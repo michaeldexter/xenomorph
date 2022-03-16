@@ -1,36 +1,33 @@
 #!/bin/sh
-
+#-
+# SPDX-License-Identifier: BSD-2-Clause-FreeBSD
+#
 # Copyright 2021, 2022 Michael Dexter. All rights reserved
 
-[ $(sysctl -n machdep.bootmethod) = BIOS ] || \
-	{ echo Warning! UEFI booting is experimental on 14 ; sleep 3 ; }
+. ./lib_xenomorph.sh || \
+	{ echo lib_xenomorph.sh failed to read ; exit 1 ; }
 
-which xl || \
-{ echo Xen packages missing - pkg install xen-tools xen-kernel ; exit 1 ; }
+echo ; echo What Dom0 root directory?
+echo -n "(root directory): " ; read dom0_root
 
-# Still required?
-#[ -d /var/lock ] || mkdir /var/lock
-#[ -d /var/run/xen ] || mkdir /var/run/xen
+echo ; echo How much Dom0 RAM? i.e. 4096, 8g, 16g
+echo -n "(Dom0 RAM): " ; read dom0_mem
 
-grep "vm.max_user_wired" /etc/sysctl.conf || echo "vm.max_user_wired=-1" >> /etc/sysctl.conf
-tail /etc/sysctl.conf
+echo ; echo How many Dom0 CPUs? i.e. 2, 4, 8
+echo -n "(Dom0 CPUs): " ; read dom0_cpus
 
-grep "xc0" /etc/ttys || echo "xc0     \"/usr/libexec/getty Pc\"         xterm   onifconsole  secure" >> /etc/ttys
-tail /etc/ttys
+uefi_string=""
+echo ; echo Will the target system boot UEFI?
+echo -n "(y/n): " ; read uefi
+if [ "$uefi" = "y" ] ; then
+	uefi_string="-e"
+fi
 
-grep "xen_kernel" /boot/loader.conf || echo "xen_kernel=\"/boot/xen\"" >> /boot/loader.conf
-grep "xen_cmdline" /boot/loader.conf || \
-echo "xen_cmdline=\"dom0_mem=4096M dom0_max_vcpus=4 dom0=pvh com1=115200,8n1 guest_loglvl=all loglvl=all\"" \
-	>> /boot/loader.conf
-# Add console=com1 to enable the serial console
-grep "if_tap_load" /boot/loader.conf || echo if_tap_load=\"YES\" >> /boot/loader.conf
-tail /boot/loader.conf
+serial_string=""
+echo ; echo Enable serial output?
+echo -n "(y/n): " ; read serial
+if [ "$serial" = "y" ] ; then
+	serial_string="-s"
+fi
 
-# Probably obsolete
-#grep xen.4th /boot/menu.rc.local  || echo "try-include /boot/xen.4th" >> /boot/menu.rc.local
-
-sysrc xencommons_enable=YES
-
-# https://svnweb.freebsd.org/ports/head/emulators/xen-kernel/pkg-message?view=markup
-
-exit 0
+xenomorph -r $dom0_root -c $dom0_cpus -m $dom0_mem $uefi_string $serial_string
