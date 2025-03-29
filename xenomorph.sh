@@ -2,32 +2,24 @@
 #-
 # SPDX-License-Identifier: BSD-2-Clause-FreeBSD
 #
-# Copyright 2021, 2022 Michael Dexter. All rights reserved
+# Copyright 2021, 2022, 2025 Michael Dexter. All rights reserved
 
 . ./lib_xenomorph.sh || \
 	{ echo lib_xenomorph.sh failed to read ; exit 1 ; }
 
-echo ; echo What Dom0 root directory?
-echo -n "(root directory): " ; read dom0_root
+# Defaults
 
-echo ; echo How much Dom0 RAM? i.e. 4096, 8g, 16g
-echo -n "(Dom0 RAM): " ; read dom0_mem
+echo ; echo "What Dom0 root directory?"
+echo -n "root directory. Default is "/" for installing to the host: "
+read dom0_root
+[ -n "$dom0_root" ] || dom0_root="/"
 
-echo ; echo How many Dom0 CPUs? i.e. 2, 4, 8
-echo -n "(Dom0 CPUs): " ; read dom0_cpus
+echo ; echo "How much Dom0 RAM? i.e. 4096M, 8G, 16G - Must have unit"
+echo -n "Dom0 RAM. Default is 4096M: " ; read dom0_mem
+[ -n "$dom0_mem" ] || dom0_mem="4096M"
 
-uefi_string=""
-echo ; echo Will the target system boot UEFI?
-echo -n "(y/n): " ; read uefi
-if [ "$uefi" = "y" ] ; then
-	uefi_string="-e"
-fi
+echo ; echo "How many Dom0 CPUs? i.e. 2, 4, 8 - Deafult is 2"
+echo -n "Dom0 CPUs. Default is 2: " ; read dom0_cpus
+[ -n "$dom0_cpus" ] || dom0_cpus=2
 
-serial_string=""
-echo ; echo Enable serial output?
-echo -n "(y/n): " ; read serial
-if [ "$serial" = "y" ] ; then
-	serial_string="-s"
-fi
-
-xenomorph -r $dom0_root -c $dom0_cpus -m $dom0_mem $uefi_string $serial_string
+xenomorph -r $dom0_root -c $dom0_cpus -m $dom0_mem

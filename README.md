@@ -1,6 +1,8 @@
 ## xenomorph.sh and xendomains.sh - Draft FreeBSD Xen Dom0 configuration and management scripts
 
-This is proof of concept FreeBSD 13.0 Xen configuration and "xendomains" VM management script
+xenomorph.sh is a wrapper to lib_xenomorph.sh that simplifies configuration of a FreeBSD Xen Dom0 host
+
+"xendomains" is a proof-of-concept VM management script
 
 The basic Xen enablement works and the needed improvements to xendomains can be followed in this review:
 
@@ -15,6 +17,5 @@ It can be enabled with:
 service xendomains onestart
 
 Note that UEFI boot should be supported in 14 MAIN
-
 
 This is not an endorsement of GitHub

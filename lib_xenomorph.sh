@@ -2,9 +2,9 @@
 #-
 # SPDX-License-Identifier: BSD-2-Clause-FreeBSD
 #
-# Copyright 2021, 2022 Michael Dexter. All rights reserved
+# Copyright 2021, 2022, 2025 Michael Dexter. All rights reserved
 
-# Version v.0.8
+# Version v.0.9
 
 # USAGE
 
@@ -28,9 +28,8 @@ xenomorph() {
 	dom0_cpus=2
 	dom0_mem="4096"
 	console_string="console=vga"
-	uefi=""
 
-	while getopts r:c:m:es opts ; do
+	while getopts r:c:m:s opts ; do
 		case $opts in
 		r)
 			dom0_root="$OPTARG"
@@ -53,10 +52,6 @@ xenomorph() {
 			#[ $(( "$dom0_mem" * 1 )) ] || \
 			#{ echo Dom0 RAM allocation invalid ; return 1 ; }
 			;;
-		e)
-			uefi="yes"
-	sysrc -f $dom0_root/boot/loader.conf efi_max_resolution="640x480"
-			;;
 		s)
 			console_string="com1=115200,8n1 console=com1,vga sync_console"
 			# sysrc does not support this and attempting idempotence
@@ -70,21 +65,9 @@ xenomorph() {
 		sysrc -f $dom0_root/boot/loader.conf boot_multicons="YES"
 		sysrc -f $dom0_root/boot/loader.conf boot_serial="YES"
 		sysrc -f $dom0_root/boot/loader.conf comconsole_speed="115200"
-
-# Make sure this is included if the argument order changes
-		if [ "$uefi" = "yes" ] ; then
-			sysrc -f $dom0_root/boot/loader.conf console="comconsole,efi"
-		else
-			sysrc -f $dom0_root/boot/loader.conf console="comconsole,vidconsole"
-		fi
 			;;
 		esac
 	done
-
-#	[ $(sysctl -n machdep.bootmethod) = UEFI ] || \
-#		{ echo ; echo Warning! UEFI boot is experimental }
-	[ "$uefi" = "yes" ] && \
-		{ echo ; echo Experimental UEFI boot has been requested ; sleep 3 ; }
 
 	pkg -r $dom0_root install -y xen-tools xen-kernel || \
 		{ echo Package installation failed ; return 1 ; }
@@ -93,6 +76,10 @@ xenomorph() {
 	grep max_user_wired $dom0_root/etc/sysctl.conf || \
 		echo "vm.max_user_wired=-1" >> $dom0_root/etc/sysctl.conf
 
+# From the Handbook
+sed -i '' -e 's/memorylocked=64K/memorylocked=unlimited/' /etc/login.conf
+cap_mkdb /etc/login.conf
+
 # The xc0 console appears to be included in FreeBSD 14
 	grep "xc0" $dom0_root/etc/ttys || \
 		echo "xc0     \"/usr/libexec/getty Pc\"         xterm   onifconsole  secure" >> $dom0_root/etc/ttys
@@ -100,10 +87,14 @@ xenomorph() {
 		{ echo $dom0_root/etc/ttys configuration failed ; return 1 ; }
 
 	sysrc -f $dom0_root/boot/loader.conf xen_kernel="/boot/xen"
-	sysrc -f $dom0_root/boot/loader.conf xen_cmdline="dom0=pvh dom0_mem=${dom0_mem} dom0_max_vcpus=${dom0_cpus} $console_string guest_loglvl=all loglvl=all"
+	sysrc -f $dom0_root/boot/loader.conf xen_cmdline="dom0_mem=${dom0_mem} dom0_max_vcpus=${dom0_cpus} dom0=pvh console=com1,vga com1=115200,8n1 guest_loglvl=all loglvl=all"
 
 # Decide if this is one to remove upon request as it is not Xen-specific
 	sysrc -f $dom0_root/boot/loader.conf if_tap_load="YES"
+# Site-specific, which would require more handling
+#	sysrc cloned_interfaces="bridge0"
+#	sysrc ifconfig_bridge0="addm em0 SYNCDHCP"
+#	sysrc ifconfig_em0="up"
 
 	sysrc -R $dom0_root xencommons_enable=YES
 
